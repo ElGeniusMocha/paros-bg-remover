@@ -1,0 +1,6 @@
+rembg==2.0.76
+Pillow
+flask
+flask-cors
+gunicorn
+onnxruntime
