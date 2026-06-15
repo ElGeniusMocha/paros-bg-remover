@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paros Store — Background Remover</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --navy: #131728; --gold: #C9A84C; --white: #ffffff;
+    --gray-100: #f8f8f8; --gray-200: #e8e8e8;
+    --gray-400: #999; --gray-600: #555; --radius: 12px;
+  }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--gray-100);
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 40px 20px; color: var(--navy);
+  }
+  header { text-align: center; margin-bottom: 40px; }
+  header h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; color: var(--navy); }
+  header h1 span { color: var(--gold); }
+  header p { font-size: 13px; color: var(--gray-400); margin-top: 6px; font-weight: 300; }
+  .card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 32px; width: 100%; max-width: 600px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  }
+  .drop-zone {
+    border: 2px dashed var(--gray-200); border-radius: 10px;
+    padding: 48px 24px; text-align: center; cursor: pointer;
+    transition: all 0.2s ease; background: var(--gray-100); position: relative;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: var(--gold); background: #fdf9f0; }
+  .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop-icon { font-size: 40px; margin-bottom: 12px; display: block; }
+  .drop-zone h3 { font-size: 15px; font-weight: 500; color: var(--navy); margin-bottom: 6px; }
+  .drop-zone p { font-size: 12px; color: var(--gray-400); }
+  .options { margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .option-label { font-size: 12px; font-weight: 500; color: var(--gray-600); margin-bottom: 6px; display: block; }
+  .option-group { flex: 1; min-width: 140px; }
+  select {
+    width: 100%; padding: 8px 12px; border: 1.5px solid var(--gray-200);
+    border-radius: 8px; font-size: 13px; font-family: 'Inter', sans-serif;
+    color: var(--navy); background: white; appearance: none; cursor: pointer; outline: none;
+  }
+  select:focus { border-color: var(--gold); }
+  .btn {
+    width: 100%; margin-top: 20px; padding: 14px;
+    background: var(--navy); color: white; border: none;
+    border-radius: 10px; font-size: 14px; font-weight: 500;
+    font-family: 'Inter', sans-serif; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.2s;
+  }
+  .btn:hover { background: #1e2540; }
+  .btn:disabled { background: var(--gray-200); color: var(--gray-400); cursor: not-allowed; }
+  .btn.gold { background: var(--gold); color: white; margin-top: 12px; }
+  .btn.gold:hover { background: #b8943d; }
+  .progress-bar { margin-top: 16px; height: 4px; background: var(--gray-200); border-radius: 99px; overflow: hidden; display: none; }
+  .progress-bar.active { display: block; }
+  .progress-fill {
+    height: 100%; background: var(--gold); border-radius: 99px; width: 0%;
+    transition: width 0.4s ease; animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+  .status { text-align: center; font-size: 12px; color: var(--gray-400); margin-top: 8px; display: none; }
+  .status.active { display: block; }
+  .preview-section { display: none; margin-top: 28px; }
+  .preview-section.active { display: block; }
+  .preview-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-400); margin-bottom: 10px; }
+  .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .preview-box {
+    border-radius: 10px; overflow: hidden; border: 1.5px solid var(--gray-200);
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    background: repeating-conic-gradient(#e0e0e0 0% 25%, white 0% 50%) 0 0 / 16px 16px;
+    position: relative;
+  }
+  .preview-box.white-bg { background: white; }
+  .preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .preview-tag { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.5); color: white; font-size: 10px; padding: 3px 7px; border-radius: 4px; }
+  .error-msg { background: #fff0f0; border: 1px solid #ffd0d0; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #c0392b; margin-top: 12px; display: none; }
+  .error-msg.active { display: block; }
+  .success-msg { background: #f0fff4; border: 1px solid #c3e6cb; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #276749; margin-top: 12px; display: none; text-align: center; }
+  .success-msg.active { display: block; }
+  footer { margin-top: 32px; font-size: 11px; color: var(--gray-400); text-align: center; }
+  footer span { color: var(--gold); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Paros <span>BG Remover</span></h1>
+  <p>شيل الخلفية بدقة عالية — مجاناً وبدون API</p>
+</header>
+<div class="card">
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept="image/*">
+    <span class="drop-icon">👟</span>
+    <h3>ارفع صورة المنتج هنا</h3>
+    <p>PNG, JPG, WEBP — حتى 20MB</p>
+  </div>
+  <div class="options">
+    <div class="option-group">
+      <span class="option-label">لون الخلفية</span>
+      <select id="bgColor">
+        <option value="white">أبيض نقي #FFFFFF</option>
+        <option value="transparent">شفاف (PNG)</option>
+        <option value="light_gray">رمادي فاتح #F5F5F5</option>
+        <option value="custom">لون مخصص</option>
+      </select>
+    </div>
+    <div class="option-group">
+      <span class="option-label">جودة الإخراج</span>
+      <select id="quality">
+        <option value="high">عالية (PNG)</option>
+        <option value="medium">متوسطة (JPG 90%)</option>
+      </select>
+    </div>
+  </div>
+  <input type="color" id="customColor" value="#ffffff" style="display:none;margin-top:8px;width:100%;height:36px;border:none;border-radius:8px;cursor:pointer;">
+  <button class="btn" id="processBtn" disabled>⚡ ابدأ المعالجة</button>
+  <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="status" id="statusText">جاري المعالجة...</div>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="success-msg" id="successMsg"></div>
+  <div class="preview-section" id="previewSection">
+    <div class="preview-label">معاينة النتيجة</div>
+    <div class="preview-grid">
+      <div>
+        <div class="preview-label" style="margin-bottom:6px;">قبل</div>
+        <div class="preview-box"><img id="previewBefore" src="" alt="قبل"><span class="preview-tag">الأصل</span></div>
+      </div>
+      <div>
+        <div class="preview-label" style="margin-bottom:6px;">بعد</div>
+        <div class="preview-box white-bg" id="previewAfterBox"><img id="previewAfter" src="" alt="بعد"><span class="preview-tag">النتيجة</span></div>
+      </div>
+    </div>
+    <button class="btn gold" id="downloadBtn">⬇️ تنزيل الصورة</button>
+  </div>
+</div>
+<footer>مدعوم بـ <span>rembg + Render</span> — يشتغل أونلاين 24/7</footer>
+
+<script>
+let selectedFile = null;
+let resultBlob = null;
+let resultFilename = '';
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const processBtn = document.getElementById('processBtn');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const statusText = document.getElementById('statusText');
+const errorMsg = document.getElementById('errorMsg');
+const successMsg = document.getElementById('successMsg');
+const previewSection = document.getElementById('previewSection');
+const previewBefore = document.getElementById('previewBefore');
+const previewAfter = document.getElementById('previewAfter');
+const previewAfterBox = document.getElementById('previewAfterBox');
+const downloadBtn = document.getElementById('downloadBtn');
+const bgColorSelect = document.getElementById('bgColor');
+const customColor = document.getElementById('customColor');
+
+fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+bgColorSelect.addEventListener('change', () => { customColor.style.display = bgColorSelect.value === 'custom' ? 'block' : 'none'; });
+
+function handleFiles(files) {
+  if (!files.length) return;
+  selectedFile = files[0];
+  processBtn.disabled = false;
+  const reader = new FileReader();
+  reader.onload = (e) => { previewBefore.src = e.target.result; };
+  reader.readAsDataURL(selectedFile);
+  dropZone.querySelector('h3').textContent = `✅ ${selectedFile.name}`;
+  dropZone.querySelector('p').textContent = `${(selectedFile.size / 1024 / 1024).toFixed(1)} MB`;
+  hideMessages();
+  previewSection.classList.remove('active');
+}
+
+processBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  hideMessages();
+  setProgress(true, 'جاري رفع الصورة...');
+  processBtn.disabled = true;
+  progressFill.style.width = '20%';
+
+  try {
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+    formData.append('bg_color', bgColorSelect.value === 'custom' ? customColor.value : bgColorSelect.value);
+    formData.append('quality', document.getElementById('quality').value);
+
+    progressFill.style.width = '40%';
+    statusText.textContent = 'جاري إزالة الخلفية...';
+
+    const response = await fetch('/remove-bg', { method: 'POST', body: formData });
+
+    progressFill.style.width = '80%';
+    statusText.textContent = 'جاري تجهيز الصورة...';
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: 'خطأ غير معروف' }));
+      throw new Error(err.error || `HTTP ${response.status}`);
+    }
+
+    resultBlob = await response.blob();
+    const ext = document.getElementById('quality').value === 'high' ? 'png' : 'jpg';
+    resultFilename = `${selectedFile.name.replace(/\.[^.]+$/, '')}_white_bg.${ext}`;
+
+    const resultUrl = URL.createObjectURL(resultBlob);
+    previewAfter.src = resultUrl;
+
+    const bgVal = bgColorSelect.value;
+    previewAfterBox.style.background = bgVal === 'transparent'
+      ? 'repeating-conic-gradient(#e0e0e0 0% 25%, white 0% 50%) 0 0 / 16px 16px'
+      : bgVal === 'custom' ? customColor.value
+      : bgVal === 'light_gray' ? '#f5f5f5' : 'white';
+
+    progressFill.style.width = '100%';
+    previewSection.classList.add('active');
+    showSuccess('✅ تمت المعالجة بنجاح! الصورة جاهزة للتنزيل.');
+
+  } catch (err) {
+    showError(`❌ خطأ: ${err.message}`);
+  } finally {
+    setTimeout(() => { setProgress(false); processBtn.disabled = false; }, 800);
+  }
+});
+
+downloadBtn.addEventListener('click', () => {
+  if (!resultBlob) return;
+  const url = URL.createObjectURL(resultBlob);
+  const a = document.createElement('a');
+  a.href = url; a.download = resultFilename; a.click();
+  URL.revokeObjectURL(url);
+});
+
+function setProgress(active, text = '') {
+  progressBar.classList.toggle('active', active);
+  statusText.classList.toggle('active', active);
+  if (text) statusText.textContent = text;
+  if (!active) progressFill.style.width = '0%';
+}
+function showError(msg) { errorMsg.textContent = msg; errorMsg.classList.add('active'); }
+function showSuccess(msg) { successMsg.textContent = msg; successMsg.classList.add('active'); }
+function hideMessages() { errorMsg.classList.remove('active'); successMsg.classList.remove('active'); }
+</script>
+</body>
+</html>
